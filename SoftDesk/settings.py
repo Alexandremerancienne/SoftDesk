@@ -41,6 +41,16 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'todos.apps.TodosConfig',
     'api.apps.ApiConfig',
+
+    'rest_framework',
+    'rest_framework.authtoken',
+    'rest_auth',
+
+    'django.contrib.sites',
+    'allauth',
+    'allauth.socialaccount',
+    'allauth.account',
+    'rest_auth.registration',
 ]
 
 MIDDLEWARE = [
@@ -129,3 +139,5 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.Users'
+
+SITE_ID = 1
