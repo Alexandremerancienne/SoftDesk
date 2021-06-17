@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import Projects, Issues, Comments, Contributors
+from .models import Project, Issue, Comment, Contributor
 
-admin.site.register(Projects)
-admin.site.register(Issues)
-admin.site.register(Comments)
-admin.site.register(Contributors)
+admin.site.register(Project)
+admin.site.register(Issue)
+admin.site.register(Comment)
+admin.site.register(Contributor)

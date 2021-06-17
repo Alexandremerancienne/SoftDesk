@@ -1,17 +1,43 @@
+from django.conf import settings
 from django.db import models
 
 from accounts.models import Users
 
 
-class Projects(models.Model):
+class Contributor(models.Model):
 
-    """A class to represent projects.
-    Attributes:
-    - Title;
-    - Description;
-    - Type (back-end, front-end, iOS, Android);
-    - Issues reported for this project;
-    - Author User ID"""
+    class Meta:
+        verbose_name_plural = "contributors"
+
+    user = models.ForeignKey(to=settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
+
+    ROLE = (
+        ('Author', 'Author'),
+        ('Contributor', 'Contributor'),
+    )
+
+    role = models.CharField(
+        max_length=100,
+        choices=ROLE,
+        help_text='Role (Author, Contributor)',
+    )
+
+    PERMISSIONS = (
+        ('All', 'All'),
+        ('Restricted', 'Restricted'),
+    )
+
+    permissions = models.CharField(max_length=100,
+                                   choices=PERMISSIONS,
+                                   help_text='Permissions (All, Restricted)',
+                                   )
+
+    def __str__(self):
+        return f'Contributor {self.project_id}: {self.user_id}'
+
+
+class Project(models.Model):
 
     class Meta:
         verbose_name_plural = "projects"
@@ -20,37 +46,29 @@ class Projects(models.Model):
     description = models.CharField(max_length=2000)
 
     TYPE = (
-        ('back', 'Back-end'),
-        ('front', 'Front-end'),
-        ('android', 'Android'),
-        ('ios', 'iOS'),
+        ('Back', 'Back-end'),
+        ('Front', 'Front-end'),
+        ('Android', 'Android'),
+        ('iOS', 'iOS'),
     )
 
     type = models.CharField(
         max_length=50,
         choices=TYPE,
         blank=True,
-        help_text='Type (front, back, android, ios)',
+        help_text='Type (Front, Back, Android, iOS)',
     )
 
-    author_user_id = models.ManyToManyField(Users,
-                                            through='Contributors')
+    author = models.ForeignKey(to=settings.AUTH_USER_MODEL,
+                               on_delete=models.CASCADE)
+
+    contributors = models.ManyToManyField(Contributor)
 
     def __str__(self):
         return self.title
 
 
-class Issues(models.Model):
-
-    """A class to represent project issues.
-    Attributes:
-    - Title;
-    - Tag (bug, improvement, task);
-    - Priority (low, medium, high);
-    - Status (To do, ongoing, done);
-    - Author User ID;
-    - Assignee User ID;
-    - Date of creation"""
+class Issue(models.Model):
 
     class Meta:
         verbose_name_plural = "issues"
@@ -59,51 +77,54 @@ class Issues(models.Model):
     description = models.CharField(max_length=2000)
 
     TAG = (
-        ('bug', 'Bug'),
-        ('improvement', 'Improvement'),
-        ('task', 'Task'),
+        ('Bug', 'Bug'),
+        ('Improvement', 'Improvement'),
+        ('Task', 'Task'),
     )
 
     tag = models.CharField(
         max_length=50,
         choices=TAG,
         blank=True,
-        help_text='Tag (bug, improvement, task)',
+        help_text='Tag (Bug, Improvement, Task)',
     )
 
     PRIORITY = (
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
+        ('Low', 'Low'),
+        ('Medium', 'Medium'),
+        ('High', 'High'),
     )
 
     priority = models.CharField(
         max_length=50,
         choices=PRIORITY,
         blank=True,
-        help_text='Priority (low, medium, high)',
+        help_text='Priority (Low, Medium, High)',
     )
 
     STATUS = (
-        ('todo', 'To Do'),
-        ('ongoing', 'Ongoing'),
-        ('done', 'Done'),
+        ('Todo', 'To Do'),
+        ('Ongoing', 'Ongoing'),
+        ('Done', 'Done'),
     )
 
     status = models.CharField(
         max_length=50,
         choices=STATUS,
         blank=True,
-        help_text='Status (todo, ongoing, done)',
+        help_text='Status (Todo, Ongoing, Done)',
     )
 
-    assignee_user_id = models.ForeignKey(Users,
-                                         on_delete=models.SET_NULL,
-                                         null=True)
+    project = models.ForeignKey(Project,
+                                on_delete=models.CASCADE)
 
-    project_id = models.ForeignKey(Projects,
-                                   on_delete=models.SET_NULL,
-                                   null=True)
+    author = models.ForeignKey(to=settings.AUTH_USER_MODEL,
+                               related_name='author',
+                               on_delete=models.CASCADE)
+
+    assignee = models.ForeignKey(to=settings.AUTH_USER_MODEL,
+                                 related_name='assignee',
+                                 on_delete=models.CASCADE)
 
     created_time = models.DateTimeField(auto_now_add=True)
 
@@ -111,27 +132,18 @@ class Issues(models.Model):
         return self.title
 
 
-class Comments(models.Model):
-
-    """A class to represent issue comments.
-    Attributes:
-    - Description;
-    - Author User ID;
-    - Issue ID;
-    - Date of creation"""
+class Comment(models.Model):
 
     class Meta:
         verbose_name_plural = "comments"
 
     description = models.CharField(max_length=2000)
 
-    author_user_id = models.ForeignKey(Users,
-                                       on_delete=models.SET_NULL,
-                                       null=True)
+    author = models.ForeignKey(to=settings.AUTH_USER_MODEL,
+                               on_delete=models.CASCADE)
 
-    issue_id = models.ForeignKey(Issues,
-                                 on_delete=models.SET_NULL,
-                                 null=True)
+    issue = models.ForeignKey(Issue,
+                              on_delete=models.CASCADE)
 
     created_time = models.DateTimeField(auto_now_add=True)
 
@@ -139,42 +151,5 @@ class Comments(models.Model):
         return self.description
 
 
-class Contributors(models.Model):
 
-    """A class to represent contributors.
-    Attributes:
-    - User ID;
-    - Project ID;
-    - Role (Author, Contributor, Other);
-    - Permission (Allowed, None)"""
 
-    class Meta:
-        verbose_name_plural = "contributors"
-
-    user_id = models.ForeignKey(Users, on_delete=models.CASCADE)
-    project_id = models.ForeignKey(Projects, on_delete=models.CASCADE)
-
-    ROLE = (
-        ('author', 'Author'),
-        ('contributor', 'Contributor'),
-        ('other', 'Other'),
-    )
-
-    role = models.CharField(
-        max_length=100,
-        choices=ROLE,
-        help_text='Role (author, contributor, other)',
-    )
-
-    PERMISSIONS = (
-        ('allowed', 'allowed'),
-        ('none', 'None'),
-    )
-
-    permissions = models.CharField(max_length=100,
-                                   choices=PERMISSIONS,
-                                   help_text='Permissions (allowed, none)',
-                                   )
-
-    def __str__(self):
-        return f'Contributor {self.project_id}: {self.user_id}'
