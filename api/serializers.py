@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
-from todos.models import Projects
+from todos.models import Project
 
 
-class ProjectsSerializer(serializers.ModelSerializer):
+class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Projects
+        model = Project
         fields = '__all__'

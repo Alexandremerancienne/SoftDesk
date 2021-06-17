@@ -34,7 +34,7 @@ class Contributor(models.Model):
                                    )
 
     def __str__(self):
-        return f'Contributor {self.project_id}: {self.user_id}'
+        return self.user.username
 
 
 class Project(models.Model):
