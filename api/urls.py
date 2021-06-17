@@ -1,7 +1,9 @@
-from django.urls import path
-from .views import AllProjectsAPIView, ProjectAPIView
+from rest_framework.routers import SimpleRouter
 
-urlpatterns = [
-    path('projects/', AllProjectsAPIView.as_view(), name='user_projects'),
-    path('projects/<int:id_project>/', ProjectAPIView.as_view(), name='user_projects'),
-]
+from .views import ProjectViewSet
+
+router = SimpleRouter()
+
+router.register('projects', ProjectViewSet, basename='projects')
+
+urlpatterns = router.urls
