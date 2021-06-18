@@ -1,8 +1,6 @@
 from django.conf import settings
 from django.db import models
 
-from accounts.models import Users
-
 
 class Contributor(models.Model):
 
