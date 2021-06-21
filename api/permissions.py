@@ -22,7 +22,7 @@ class IsIssueAuthorOrContributorReadOnly(permissions.BasePermission):
 
 
 class IsCommentAuthorOrContributorReadOnly(permissions.BasePermission):
-    message = 'You are not the author of this issue'
+    message = 'You are not the author of this comment'
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS \
