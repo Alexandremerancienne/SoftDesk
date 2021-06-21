@@ -10,8 +10,8 @@ from .permissions import IsCommentAuthorOrContributorReadOnly
 
 class ProjectViewSet(viewsets.ModelViewSet):
     permission_classes = (IsProjectContributorOrAuthor,)
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
+    queryset = Contributor.objects.all()
+    serializer_class = ContributorSerializer
 
     @action(detail=True)
     def get_queryset(self):

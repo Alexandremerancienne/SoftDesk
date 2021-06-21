@@ -44,7 +44,7 @@ class Contributor(models.Model):
                                 on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.user.username} ({self.project.title})'
+        return f'{self.user.username} ( {self.role} {self.project})'
 
 
 class Issue(models.Model):

@@ -6,7 +6,7 @@ class IsProjectContributorOrAuthor(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS \
-                and obj.author.role in ['contributor', 'author']:
+                and obj.contributor_set in ['contributor', 'author']:
             return True
         return True if obj.author == request.user else False
 
