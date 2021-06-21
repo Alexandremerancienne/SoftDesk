@@ -7,9 +7,9 @@ class Project(models.Model):
     description = models.CharField(max_length=2000)
 
     TYPE = (
-        ('Back', 'Back-end'),
-        ('Front', 'Front-end'),
-        ('Android', 'Android'),
+        ('back', 'Back-end'),
+        ('front', 'Front-end'),
+        ('android', 'Android'),
         ('iOS', 'iOS'),
     )
 
@@ -19,9 +19,6 @@ class Project(models.Model):
         blank=True,
         help_text='Type (Front, Back, Android, iOS)',
     )
-
-    author = models.ForeignKey(to=settings.AUTH_USER_MODEL,
-                               on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
@@ -33,8 +30,8 @@ class Contributor(models.Model):
                              on_delete=models.CASCADE)
 
     ROLE = (
-        ('Author', 'Author'),
-        ('Contributor', 'Contributor'),
+        ('author', 'Author'),
+        ('contributor', 'Contributor'),
     )
 
     role = models.CharField(
@@ -56,9 +53,9 @@ class Issue(models.Model):
     description = models.CharField(max_length=2000)
 
     TAG = (
-        ('Bug', 'Bug'),
-        ('Improvement', 'Improvement'),
-        ('Task', 'Task'),
+        ('bug', 'Bug'),
+        ('improvement', 'Improvement'),
+        ('task', 'Task'),
     )
 
     tag = models.CharField(
@@ -69,9 +66,9 @@ class Issue(models.Model):
     )
 
     PRIORITY = (
-        ('Low', 'Low'),
-        ('Medium', 'Medium'),
-        ('High', 'High'),
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
     )
 
     priority = models.CharField(
@@ -82,9 +79,9 @@ class Issue(models.Model):
     )
 
     STATUS = (
-        ('Todo', 'To Do'),
-        ('Ongoing', 'Ongoing'),
-        ('Done', 'Done'),
+        ('todo', 'To Do'),
+        ('ongoing', 'Ongoing'),
+        ('done', 'Done'),
     )
 
     status = models.CharField(
@@ -119,7 +116,3 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.description
-
-
-
-

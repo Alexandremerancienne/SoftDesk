@@ -4,17 +4,19 @@ from rest_framework.decorators import action
 from todos.models import Project, Issue, Comment, Contributor
 from rest_framework import permissions
 from .serializers import ProjectSerializer, IssueSerializer, CommentSerializer, ContributorSerializer
+from .permissions import IsProjectContributorOrAuthor, IsIssueAuthorOrContributorReadOnly
+from .permissions import IsCommentAuthorOrContributorReadOnly
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsProjectContributorOrAuthor,)
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
     @action(detail=True)
     def get_queryset(self):
         user = self.request.user
-        return Project.objects.filter(author=user)
+        return Contributor.objects.filter(user=user)
 
 
 class ContributorViewSet(viewsets.ModelViewSet):
@@ -28,7 +30,7 @@ class ContributorViewSet(viewsets.ModelViewSet):
 
 
 class IssueViewSet(viewsets.ModelViewSet):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsIssueAuthorOrContributorReadOnly,)
     serializer_class = IssueSerializer
     queryset = Issue.objects.all()
 
@@ -38,7 +40,7 @@ class IssueViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsCommentAuthorOrContributorReadOnly,)
     serializer_class = CommentSerializer
     queryset = Comment.objects.all()
 
