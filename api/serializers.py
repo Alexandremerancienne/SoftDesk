@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from todos.models import Project, Issue, Comment
+from todos.models import Project, Issue, Comment, Contributor
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -18,4 +18,10 @@ class IssueSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
+        fields = '__all__'
+
+
+class ContributorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contributor
         fields = '__all__'
