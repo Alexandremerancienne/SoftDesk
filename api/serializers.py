@@ -24,4 +24,5 @@ class CommentSerializer(serializers.ModelSerializer):
 class ContributorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contributor
-        fields = ['project', 'role']
+        fields = ['project', 'user', 'role']
+

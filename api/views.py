@@ -1,26 +1,25 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 
-from todos.models import Project, Issue, Comment, Contributor
-from rest_framework import permissions
-from .serializers import ProjectSerializer, IssueSerializer, CommentSerializer, ContributorSerializer
-from .permissions import IsProjectContributorOrAuthor, IsIssueAuthorOrContributorReadOnly
+from todos.models import Issue, Comment, Contributor, Project
+from .serializers import IssueSerializer, CommentSerializer, ContributorSerializer, ProjectSerializer
+from .permissions import IsProjectAuthorOrContributorReadOnly, IsIssueAuthorOrContributorReadOnly, IsProjectAuthor
 from .permissions import IsCommentAuthorOrContributorReadOnly
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsProjectContributorOrAuthor,)
-    queryset = Contributor.objects.all()
-    serializer_class = ContributorSerializer
+    permission_classes = (IsProjectAuthorOrContributorReadOnly,)
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
 
     @action(detail=True)
     def get_queryset(self):
         user = self.request.user
-        return Contributor.objects.filter(user=user)
+        return Project.objects.filter(contributor__user__id=user.id)
 
 
 class ContributorViewSet(viewsets.ModelViewSet):
-    permission_classes = (permissions.IsAuthenticated,)
+    permission_classes = (IsProjectAuthor,)
     serializer_class = ContributorSerializer
     queryset = Contributor.objects.all()
 
