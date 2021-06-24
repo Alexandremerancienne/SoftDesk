@@ -63,25 +63,25 @@ class ContributorViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'You are not a member of this project'},
                             status=status.HTTP_404_NOT_FOUND)
         else:
-            user_data = request.data['user']
-            request_copy = request.data.copy()
-            request_copy['role'] = 'contributor'
-            if user_data:
-                try:
-                    Users.objects.get(id=user_data)
-                except:
-                    return Response({'detail': 'Invalid request: enter valid user ID'},
-                                    status=status.HTTP_404_NOT_FOUND)
-                id_list = [str(contributor.user.id) for contributor in contributors]
-                if id_list.count(user_data) != 0:
-                    return Response({'detail': 'Invalid request: '
-                                               'user already registered as a contributor'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-                else:
-                    serializer = ContributorSerializer(data=request_copy)
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save(project_id=int(project_pk))
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                user_data = request.data['user']
+                Users.objects.get(id=user_data)
+            except:
+                return Response({'detail': 'Invalid request: enter valid user ID'},
+                                status=status.HTTP_404_NOT_FOUND)
+            id_list = [str(contributor.user.id) for contributor in contributors]
+
+            if id_list.count(user_data) != 0:
+                return Response({'detail': 'Invalid request: '
+                                           'user already registered as a contributor'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            else:
+                request_copy = request.data.copy()
+                request_copy['role'] = 'contributor'
+                serializer = ContributorSerializer(data=request_copy)
+                serializer.is_valid(raise_exception=True)
+                serializer.save(project_id=int(project_pk))
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class IssueViewSet(viewsets.ModelViewSet):
@@ -100,6 +100,35 @@ class IssueViewSet(viewsets.ModelViewSet):
         else:
             serializer = IssueSerializer(queryset, many=True)
             return Response(serializer.data)
+
+    def create(self, request, project_pk=None):
+        contributors = Contributor.objects.filter(
+            project=project_pk, project__contributor__user=request.user
+        )
+        if contributors.count() == 0:
+            return Response({'detail': 'You are not a member of this project'},
+                            status=status.HTTP_404_NOT_FOUND)
+        else:
+            try:
+                user_data = request.data['assignee']
+                Users.objects.get(id=user_data)
+            except:
+                return Response({'detail': 'Invalid request: enter valid assignee ID'},
+                                status=status.HTTP_404_NOT_FOUND)
+            id_list = [str(contributor.user.id) for contributor in contributors]
+
+            if id_list.count(user_data) == 0:
+                return Response({'detail': 'Invalid request: '
+                                           'unknown assignee'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            else:
+                request_copy = request.data.copy()
+                request_copy['author'] = request.user.id
+                request_copy['project'] = project_pk
+                serializer = IssueSerializer(data=request_copy)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
