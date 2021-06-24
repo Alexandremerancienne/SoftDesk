@@ -25,3 +25,4 @@ class ContributorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contributor
         fields = ["id", "user", "role"]
+

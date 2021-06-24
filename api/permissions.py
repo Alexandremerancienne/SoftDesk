@@ -2,7 +2,8 @@ from rest_framework import permissions
 
 
 class IsProjectAuthorOrContributorReadOnly(permissions.BasePermission):
-    message = "You are not the author of this project"
+    message = "Missing credentials: " \
+              "You need author status to update-patch-delete this project"
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
@@ -18,7 +19,8 @@ class IsProjectAuthorOrContributorReadOnly(permissions.BasePermission):
 
 
 class IsProjectAuthor(permissions.BasePermission):
-    message = "You are not the author of this project"
+    message = "Missing credentials: " \
+              "You need author status to add-remove a user"
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
@@ -39,8 +41,10 @@ class IsObjectAuthorOrContributorReadOnly(permissions.BasePermission):
 
 
 class IsIssueAuthorOrContributorReadOnly(IsObjectAuthorOrContributorReadOnly):
-    message = "You are not the author of this issue"
+    message = "Missing credentials: " \
+              "You need author status to update-patch-delete this issue"
 
 
 class IsCommentAuthorOrContributorReadOnly(IsObjectAuthorOrContributorReadOnly):
-    message = "You are not the author of this comment"
+    message = "Missing credentials: " \
+              "You need author status to update-patch-delete this comment"

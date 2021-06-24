@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 
+from accounts.models import Users
 from todos.models import Issue, Comment, Contributor, Project
 from .serializers import (
     IssueSerializer,
@@ -44,12 +45,41 @@ class ContributorViewSet(viewsets.ModelViewSet):
     serializer_class = ContributorSerializer
 
     def list(self, request, project_pk=None):
-        user = self.request.user
         queryset = Contributor.objects.filter(
-            project=project_pk, project__contributor__user=user
+            project=project_pk, project__contributor__user=request.user
         )
-        serializer = ContributorSerializer(queryset, many=True)
-        return Response(serializer.data)
+        if queryset.count() == 0:
+            return Response({'detail': 'You are not a member of this project'},
+                            status=status.HTTP_404_NOT_FOUND)
+        else:
+            serializer = ContributorSerializer(queryset, many=True)
+            return Response(serializer.data)
+
+    def create(self, request, project_pk=None):
+        contributors = Contributor.objects.filter(
+            project=project_pk, project__contributor__user=request.user
+        )
+        if contributors.count() == 0:
+            return Response({'detail': 'You are not a member of this project'},
+                            status=status.HTTP_404_NOT_FOUND)
+        else:
+            user_data = request.data['user']
+            if user_data:
+                try:
+                    Users.objects.get(id=user_data)
+                except:
+                    return Response({'detail': 'Invalid request: enter valid user ID'},
+                                    status=status.HTTP_404_NOT_FOUND)
+                id_list = [str(contributor.user.id) for contributor in contributors]
+                if id_list.count(user_data) != 0:
+                    return Response({'detail': 'Invalid request: '
+                                               'user already registered as a contributor'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    serializer = ContributorSerializer(data=request.data)
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save(project_id=int(project_pk))
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class IssueViewSet(viewsets.ModelViewSet):
@@ -62,8 +92,12 @@ class IssueViewSet(viewsets.ModelViewSet):
         queryset = Issue.objects.filter(
             project_id=project_pk, project__contributor__user=user
         )
-        serializer = IssueSerializer(queryset, many=True)
-        return Response(serializer.data)
+        if queryset.count() == 0:
+            return Response({'detail': 'You are not a member of this project'},
+                            status=status.HTTP_404_NOT_FOUND)
+        else:
+            serializer = IssueSerializer(queryset, many=True)
+            return Response(serializer.data)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -78,6 +112,9 @@ class CommentViewSet(viewsets.ModelViewSet):
             issue__project_id=project_pk,
             issue__project__contributor__user=user
         )
-        serializer = CommentSerializer(queryset, many=True)
-        return Response(serializer.data)
-
+        if queryset.count() == 0:
+            return Response({'detail': 'You are not a member of this project'},
+                            status=status.HTTP_404_NOT_FOUND)
+        else:
+            serializer = CommentSerializer(queryset, many=True)
+            return Response(serializer.data)
