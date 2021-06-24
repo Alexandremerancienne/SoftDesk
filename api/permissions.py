@@ -25,11 +25,9 @@ class IsProjectAuthor(permissions.BasePermission):
             return True
         project = obj.project
         contributors = project.contributor_set.all()
-        author_id = [contributor.id for contributor in contributors
-                  if contributor.role == 'author']
-        print(obj.id)
-        print(author_id)
-        #return True if obj.id in author_id else False
+        author_id = [contributor.user.id for contributor in contributors
+                     if contributor.role == 'author']
+        return True if request.user.id in author_id else False
 
 
 class IsObjectAuthorOrContributorReadOnly(permissions.BasePermission):
