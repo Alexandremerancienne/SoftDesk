@@ -64,6 +64,8 @@ class ContributorViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_404_NOT_FOUND)
         else:
             user_data = request.data['user']
+            request_copy = request.data.copy()
+            request_copy['role'] = 'contributor'
             if user_data:
                 try:
                     Users.objects.get(id=user_data)
@@ -76,7 +78,7 @@ class ContributorViewSet(viewsets.ModelViewSet):
                                                'user already registered as a contributor'},
                                     status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    serializer = ContributorSerializer(data=request.data)
+                    serializer = ContributorSerializer(data=request_copy)
                     serializer.is_valid(raise_exception=True)
                     serializer.save(project_id=int(project_pk))
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
