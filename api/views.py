@@ -96,7 +96,7 @@ class ContributorViewSet(viewsets.ModelViewSet):
         try:
             contributor = Contributor.objects.get(project_id=project_pk,
                                                   user_id=pk)
-            contributor.delete()
+            self.perform_destroy(contributor)
         except:
             return Response({'detail': 'Invalid request: '
                                        'unknown contributor'},
