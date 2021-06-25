@@ -226,6 +226,6 @@ class CommentViewSet(viewsets.ModelViewSet):
             request_copy['issue'] = issue_pk
             serializer = CommentSerializer(data=request_copy)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            serializer.save(issue_id=int(issue_pk))
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
