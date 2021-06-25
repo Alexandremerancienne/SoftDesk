@@ -147,3 +147,5 @@ REST_FRAMEWORK = {
 }
 
 SITE_ID = 1
+
+

@@ -46,7 +46,7 @@ class ContributorViewSet(viewsets.ModelViewSet):
 
     def list(self, request, project_pk=None):
         queryset = Contributor.objects.filter(
-            project=project_pk, project__contributor__user=request.user
+            project_id=project_pk, project__contributor__user=request.user
         )
         if queryset.count() == 0:
             return Response({'detail': 'You are not a member of this project'},
@@ -56,6 +56,15 @@ class ContributorViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
 
     def create(self, request, project_pk=None):
+        try:
+            int(project_pk)
+        except:
+            return Response({'detail': 'Please enter a valid project number'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        projects = Project.objects.filter(id=project_pk)
+        if projects.count() == 0:
+            return Response({'detail': 'Please enter a valid project number'},
+                            status=status.HTTP_404_NOT_FOUND)
         contributors = Contributor.objects.filter(
             project=project_pk, project__contributor__user=request.user
         )
@@ -83,6 +92,17 @@ class ContributorViewSet(viewsets.ModelViewSet):
                 serializer.save(project_id=int(project_pk))
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def destroy(self, request, project_pk=None, pk=None):
+        try:
+            contributor = Contributor.objects.get(project_id=project_pk,
+                                                  user_id=pk)
+            contributor.delete()
+        except:
+            return Response({'detail': 'Invalid request: '
+                                       'unknown contributor'},
+                            status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class IssueViewSet(viewsets.ModelViewSet):
     permission_classes = (IsIssueAuthorOrContributorReadOnly,)
@@ -91,17 +111,29 @@ class IssueViewSet(viewsets.ModelViewSet):
 
     def list(self, request, project_pk=None):
         user = self.request.user
-        queryset = Issue.objects.filter(
-            project_id=project_pk, project__contributor__user=user
-        )
-        if queryset.count() == 0:
+        try:
+            Project.objects.get(id=project_pk,
+                                contributor__user=user)
+        except:
             return Response({'detail': 'You are not a member of this project'},
                             status=status.HTTP_404_NOT_FOUND)
-        else:
-            serializer = IssueSerializer(queryset, many=True)
-            return Response(serializer.data)
+        queryset = Issue.objects.filter(
+            project_id=project_pk,
+        )
+        print(queryset)
+        serializer = IssueSerializer(queryset, many=True)
+        return Response(serializer.data)
 
     def create(self, request, project_pk=None):
+        try:
+            int(project_pk)
+        except:
+            return Response({'detail': 'Please enter a valid project number'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        projects = Project.objects.filter(id=project_pk)
+        if projects.count() == 0:
+            return Response({'detail': 'Please enter a valid project number'},
+                            status=status.HTTP_404_NOT_FOUND)
         contributors = Contributor.objects.filter(
             project=project_pk, project__contributor__user=request.user
         )
@@ -138,14 +170,62 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def list(self, request, project_pk=None, issue_pk=None):
         user = self.request.user
+        try:
+            Project.objects.get(id=project_pk,
+                                contributor__user=user)
+        except:
+            return Response({'detail': 'You are not a member of this project'},
+                            status=status.HTTP_404_NOT_FOUND)
+        try:
+            Issue.objects.get(project_id=project_pk,
+                              id=issue_pk)
+        except:
+            return Response({'detail': 'Invalid request: '
+                                       'please select a valid Issue number'},
+                            status=status.HTTP_404_NOT_FOUND)
         queryset = Comment.objects.filter(
             issue_id=issue_pk,
             issue__project_id=project_pk,
             issue__project__contributor__user=user
         )
-        if queryset.count() == 0:
+        serializer = CommentSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, project_pk=None, issue_pk=None):
+        try:
+            int(project_pk)
+        except:
+            return Response({'detail': 'Please enter a valid project number'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            int(issue_pk)
+        except:
+            return Response({'detail': 'Please enter a valid issue number'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        projects = Project.objects.filter(id=project_pk)
+        if projects.count() == 0:
+            return Response({'detail': 'Please enter a valid project number'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        issues = Issue.objects.filter(project_id=project_pk)
+        if issues.count() == 0:
+            return Response({'detail': 'Please enter a valid issue number'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        contributors = Contributor.objects.filter(
+            project=project_pk, project__contributor__user=request.user
+        )
+        if contributors.count() == 0:
             return Response({'detail': 'You are not a member of this project'},
                             status=status.HTTP_404_NOT_FOUND)
         else:
-            serializer = CommentSerializer(queryset, many=True)
-            return Response(serializer.data)
+            request_copy = request.data.copy()
+            request_copy['author'] = request.user.id
+            request_copy['project'] = project_pk
+            request_copy['issue'] = issue_pk
+            serializer = CommentSerializer(data=request_copy)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
