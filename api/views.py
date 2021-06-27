@@ -120,7 +120,6 @@ class IssueViewSet(viewsets.ModelViewSet):
         queryset = Issue.objects.filter(
             project_id=project_pk,
         )
-        print(queryset)
         serializer = IssueSerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -161,6 +160,51 @@ class IssueViewSet(viewsets.ModelViewSet):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, project_pk=None, pk=None, **kwargs):
+        user = self.request.user
+        try:
+            Project.objects.get(id=project_pk,
+                                contributor__user=user)
+        except:
+            return Response({'detail': 'You are not a member of this project'},
+                            status=status.HTTP_404_NOT_FOUND)
+        try:
+            Issue.objects.get(project_id=project_pk,
+                              id=pk)
+        except:
+            return Response({'detail': 'Invalid request: '
+                                       'please select a valid Issue number'},
+                            status=status.HTTP_404_NOT_FOUND)
+        else:
+            request_copy = request.data.copy()
+            request_copy['author'] = request.user.id
+            request_copy['project'] = project_pk
+
+            try:
+                user_data = request.data['assignee']
+                Users.objects.get(id=user_data)
+            except:
+                return Response({'detail': 'Invalid request: enter valid assignee ID'},
+                                status=status.HTTP_404_NOT_FOUND)
+            contributors = Contributor.objects.filter(
+                project=project_pk, project__contributor__user=request.user
+            )
+            id_list = [str(contributor.user.id) for contributor in contributors]
+
+            if id_list.count(user_data) == 0:
+                return Response({'detail': 'Invalid request: '
+                                           'unknown assignee'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            else:
+                issue = Issue.objects.get(project_id=project_pk,
+                                          id=pk)
+                self.check_object_permissions(request, issue)
+                serializer = IssueSerializer(issue, data=request_copy)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+
+                return Response(serializer.data)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
