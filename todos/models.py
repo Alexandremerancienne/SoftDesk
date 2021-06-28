@@ -26,7 +26,8 @@ class Project(models.Model):
 
 class Contributor(models.Model):
 
-    user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(to=settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
 
     ROLE = (
         ("author", "Author"),
@@ -87,14 +88,17 @@ class Issue(models.Model):
         choices=STATUS,
         blank=True,
         help_text="Status (Todo, Ongoing, Done)",
+        default="todo"
     )
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     author = models.ForeignKey(
-        to=settings.AUTH_USER_MODEL, related_name="author", on_delete=models.CASCADE
+        to=settings.AUTH_USER_MODEL, related_name="author",
+        on_delete=models.CASCADE
     )
     assignee = models.ForeignKey(
-        to=settings.AUTH_USER_MODEL, related_name="assignee", on_delete=models.CASCADE
+        to=settings.AUTH_USER_MODEL, related_name="assignee",
+        on_delete=models.CASCADE
     )
     created_time = models.DateTimeField(auto_now_add=True)
 
@@ -105,7 +109,8 @@ class Issue(models.Model):
 class Comment(models.Model):
 
     description = models.CharField(max_length=2000)
-    author = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    author = models.ForeignKey(to=settings.AUTH_USER_MODEL,
+                               on_delete=models.CASCADE)
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE)
     created_time = models.DateTimeField(auto_now_add=True)
 

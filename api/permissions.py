@@ -2,8 +2,10 @@ from rest_framework import permissions
 
 
 class IsProjectAuthorOrContributorReadOnly(permissions.BasePermission):
-    message = "Missing credentials: " \
-              "You need author status to update-patch-delete this project"
+    message = (
+        "Missing credentials: "
+        "You need author status to update-patch-delete this project"
+    )
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
@@ -27,24 +29,30 @@ class IsProjectAuthor(permissions.BasePermission):
             return True
         project = obj.project
         contributors = project.contributor_set.all()
-        author_id = [contributor.user.id for contributor in contributors
-                     if contributor.role == 'author']
+        author_id = [
+            contributor.user.id
+            for contributor in contributors
+            if contributor.role == "author"
+        ]
         return True if request.user.id in author_id else False
 
 
-class IsObjectAuthorOrContributorReadOnly(permissions.BasePermission):
-
+class IsAuthorOrContributorReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
         return True if obj.author == request.user else False
 
 
-class IsIssueAuthorOrContributorReadOnly(IsObjectAuthorOrContributorReadOnly):
-    message = "Missing credentials: " \
-              "You need author status to update-patch-delete this issue"
+class IsIssueAuthorOrContributorReadOnly(IsAuthorOrContributorReadOnly):
+    message = (
+        "Missing credentials: "
+        "You need author status to update-patch-delete this issue"
+    )
 
 
-class IsCommentAuthorOrContributorReadOnly(IsObjectAuthorOrContributorReadOnly):
-    message = "Missing credentials: " \
-              "You need author status to update-patch-delete this comment"
+class IsCommentAuthorOrContributorReadOnly(IsAuthorOrContributorReadOnly):
+    message = (
+        "Missing credentials: "
+        "You need author status to update-patch-delete this comment"
+    )
