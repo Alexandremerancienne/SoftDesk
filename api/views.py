@@ -15,6 +15,19 @@ from .permissions import (
     IsProjectAuthor,
     IsCommentAuthorOrContributorReadOnly,
 )
+from .exceptions import (
+    InvalidProjectNumber,
+    InvalidIssueNumber,
+    InvalidCommentNumber,
+    ProjectNotFound,
+    ContributorNotFound,
+    AssigneeNotFound,
+    IssueNotFound,
+    CommentNotFound,
+    NotContributor,
+    UserNotFound,
+    AlreadyContributor,
+)
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -32,10 +45,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         user = request.user
         queryset = Project.objects.filter(id=pk, contributor__user=user)
         if queryset.count() == 0:
-            return Response(
-                {"Invalid request": "Project not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise ProjectNotFound()
         project = queryset.first()
         serializer = ProjectSerializer(project)
         return Response(serializer.data)
@@ -60,18 +70,12 @@ class ContributorViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid Request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         queryset = Contributor.objects.filter(
             project_id=project_pk, project__contributor__user=request.user
         )
         if queryset.count() == 0:
-            return Response(
-                {"Invalid request": "Project not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise ProjectNotFound()
         else:
             serializer = ContributorSerializer(queryset, many=True)
             return Response(serializer.data)
@@ -80,44 +84,26 @@ class ContributorViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         projects = Project.objects.filter(id=project_pk)
         if projects.count() == 0:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise ProjectNotFound()
         contributors = Contributor.objects.filter(
             project=project_pk, project__contributor__user=request.user
         )
         if contributors.count() == 0:
-            return Response(
-                {"Invalid request": "You are not a member of this project"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise NotContributor()
         else:
             try:
                 user_data = request.data["user"]
                 Users.objects.get(id=user_data)
             except Exception:
-                return Response(
-                    {"Invalid request": "Enter valid User ID"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+                raise UserNotFound()
             id_list = [str(contributor.user.id)
                        for contributor in contributors]
 
             if id_list.count(user_data) != 0:
-                return Response(
-                    {
-                        "Invalid request":
-                        "User already registered as a Contributor"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                raise AlreadyContributor()
             else:
                 request_copy = request.data.copy()
                 request_copy["role"] = "contributor"
@@ -131,26 +117,17 @@ class ContributorViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         try:
             int(pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidIssueNumber()
         try:
             contributor = Contributor.objects.get(project_id=project_pk,
                                                   user_id=pk)
             self.perform_destroy(contributor)
         except Exception:
-            return Response(
-                {"Invalid request": "Contributor not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise ContributorNotFound()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -163,18 +140,12 @@ class IssueViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         user = self.request.user
         try:
             Project.objects.get(id=project_pk, contributor__user=user)
         except Exception:
-            return Response(
-                {"Invalid request": "Project not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise ProjectNotFound()
         queryset = Issue.objects.filter(
             project_id=project_pk,
         )
@@ -187,10 +158,7 @@ class IssueViewSet(viewsets.ModelViewSet):
                                         id=pk,
                                         project__contributor__user=user)
         if queryset.count() == 0:
-            return Response(
-                {"Invalid request": "Issue not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise IssueNotFound()
         project = queryset.first()
         serializer = IssueSerializer(project)
         return Response(serializer.data)
@@ -199,42 +167,26 @@ class IssueViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         projects = Project.objects.filter(id=project_pk)
         if projects.count() == 0:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise ProjectNotFound()
         contributors = Contributor.objects.filter(
             project=project_pk, project__contributor__user=request.user
         )
         if contributors.count() == 0:
-            return Response(
-                {"Invalid Request":
-                 "You are not a Contributor to this Project"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise NotContributor()
         else:
             try:
                 user_data = request.data["assignee"]
                 Users.objects.get(id=user_data)
             except Exception:
-                return Response(
-                    {"Invalid request": "Enter valid Assignee ID"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+                raise AssigneeNotFound()
             id_list = [str(contributor.user.id)
                        for contributor in contributors]
 
             if id_list.count(user_data) == 0:
-                return Response(
-                    {"Invalid request": "Unknown Assignee"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                raise AssigneeNotFound()
             else:
                 request_copy = request.data.copy()
                 request_copy["author"] = request.user.id
@@ -250,32 +202,19 @@ class IssueViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         try:
             int(pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidIssueNumber()
         try:
             Project.objects.get(id=project_pk, contributor__user=user)
         except Exception:
-            return Response(
-                {"Invalid request":
-                 "You are not a Contributor to this project"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise NotContributor()
         try:
             Issue.objects.get(project_id=project_pk, id=pk)
         except Exception:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise IssueNotFound()
 
         request_copy = request.data.copy()
         request_copy["author"] = request.user.id
@@ -285,10 +224,7 @@ class IssueViewSet(viewsets.ModelViewSet):
             user_data = request.data["assignee"]
             Users.objects.get(id=user_data)
         except Exception:
-            return Response(
-                {"Invalid request": "Enter valid Assignee ID"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise AssigneeNotFound()
         contributors = Contributor.objects.filter(
             project=project_pk, project__contributor__user=request.user
         )
@@ -296,10 +232,7 @@ class IssueViewSet(viewsets.ModelViewSet):
                    for contributor in contributors]
 
         if id_list.count(user_data) == 0:
-            return Response(
-                {"Invalid request": "Assignee not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise AssigneeNotFound()
         else:
             issue = Issue.objects.get(project_id=project_pk, id=pk)
             self.check_object_permissions(request, issue)
@@ -316,25 +249,15 @@ class IssueViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         try:
             Project.objects.get(id=project_pk, contributor__user=user)
         except Exception:
-            return Response(
-                {"Invalid request":
-                 "You are not a Contributor to this project"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise NotContributor()
         try:
             Issue.objects.get(project_id=project_pk, id=pk)
         except Exception:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise IssueNotFound()
 
         issue = Issue.objects.get(project_id=project_pk, id=pk)
         request_copy = request.data.copy()
@@ -355,10 +278,7 @@ class IssueViewSet(viewsets.ModelViewSet):
                     user_data = request.data["assignee"]
                     Users.objects.get(id=user_data)
                 except Exception:
-                    return Response(
-                        {"Invalid request": "Enter valid Assignee ID"},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
+                    raise AssigneeNotFound()
                 contributors = Contributor.objects.filter(
                     project=project_pk,
                     project__contributor__user=request.user
@@ -367,10 +287,7 @@ class IssueViewSet(viewsets.ModelViewSet):
                            for contributor in contributors]
 
                 if id_list.count(user_data) == 0:
-                    return Response(
-                        {"Invalid request": "Assignee not found"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+                    raise AssigneeNotFound()
             else:
 
                 request_copy["assignee"] = issue.assignee.id
@@ -399,33 +316,21 @@ class CommentViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         try:
             int(issue_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidIssueNumber()
+
         user = self.request.user
         try:
             Project.objects.get(id=project_pk, contributor__user=user)
         except Exception:
-            return Response(
-                {"Invalid request":
-                 "You are not a Contributor to this project"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise NotContributor()
         try:
             Issue.objects.get(project_id=project_pk, id=issue_pk)
         except Exception:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise IssueNotFound()
         queryset = Comment.objects.filter(
             issue_id=issue_pk,
             issue__project_id=project_pk,
@@ -443,10 +348,7 @@ class CommentViewSet(viewsets.ModelViewSet):
                                    id=pk,
                                    issue__project__contributor__user=user)
         if queryset.count() == 0:
-            return Response(
-                {"Invalid request": "Comment not found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise CommentNotFound()
         project = queryset.first()
         serializer = CommentSerializer(project)
         return Response(serializer.data)
@@ -455,41 +357,25 @@ class CommentViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         try:
             int(issue_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidIssueNumber()
 
         projects = Project.objects.filter(id=project_pk)
         if projects.count() == 0:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise ProjectNotFound()
 
         issues = Issue.objects.filter(project_id=project_pk)
         if issues.count() == 0:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise IssueNotFound()
 
         contributors = Contributor.objects.filter(
             project=project_pk, project__contributor__user=request.user
         )
         if contributors.count() == 0:
-            return Response(
-                {"Invalid request":
-                 "You are not a Contributor to this project"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise NotContributor()
         else:
             request_copy = request.data.copy()
             request_copy["author"] = request.user.id
@@ -506,47 +392,28 @@ class CommentViewSet(viewsets.ModelViewSet):
         try:
             int(project_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Project number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidProjectNumber()
         try:
             int(issue_pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidIssueNumber()
         try:
             int(pk)
         except ValueError:
-            return Response(
-                {"Invalid request": "Enter a valid Comment number"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise InvalidCommentNumber()
         try:
             Project.objects.get(id=project_pk, contributor__user=user)
         except Exception:
-            return Response(
-                {"Invalid request":
-                 "You are not a Contributor to this project"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise NotContributor()
         try:
             Issue.objects.get(project_id=project_pk, id=pk)
         except Exception:
-            return Response(
-                {"Invalid request": "Enter a valid Issue number"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise IssueNotFound()
         try:
             Comment.objects.get(issue__project_id=project_pk,
                                 issue_id=pk, id=pk)
         except Exception:
-            return Response(
-                {"Invalid request": "Enter a valid Comment number"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            raise CommentNotFound()
         else:
             request_copy = request.data.copy()
             request_copy["author"] = request.user.id
@@ -560,3 +427,42 @@ class CommentViewSet(viewsets.ModelViewSet):
             serializer.save()
 
             return Response(serializer.data)
+
+    def partial_update(self, request, project_pk=None,
+                       issue_pk=None, pk=None, **kwargs):
+
+        user = self.request.user
+        try:
+            int(project_pk)
+        except ValueError:
+            raise InvalidProjectNumber()
+        try:
+            Project.objects.get(id=project_pk, contributor__user=user)
+        except Exception:
+            raise NotContributor()
+        try:
+            Issue.objects.get(project_id=project_pk, id=pk)
+        except Exception:
+            raise IssueNotFound()
+        try:
+            int(pk)
+        except ValueError:
+            raise InvalidCommentNumber()
+
+        comment = Comment.objects.get(issue__project_id=project_pk,
+                                      issue_id=issue_pk,
+                                      id=pk)
+        request_copy = request.data.copy()
+
+        description = "description"
+        if description not in request.data.keys():
+            request_copy["description"] = comment.description
+            serializer = CommentSerializer(comment)
+            return Response(serializer.data)
+
+        request_copy["author"] = request.user.id
+        self.check_object_permissions(request, comment)
+        serializer = CommentSerializer(comment, data=request_copy)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
