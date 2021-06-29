@@ -32,4 +32,4 @@
 
 * Endpoints can be tested with tools such as Postman or cURL.
 
-* A Postman collection is available to test the API endpoints : ``
+* A Public Postman collection is available to test the API endpoints : `https://documenter.getpostman.com/view/15000046/Tzeaj6GQ`
