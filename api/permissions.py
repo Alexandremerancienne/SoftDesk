@@ -27,7 +27,6 @@ class IsProjectAuthor(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-        print(obj)
         project = obj.project
         contributors = project.contributor_set.all()
         author_id = [
