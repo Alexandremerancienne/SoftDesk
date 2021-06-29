@@ -125,9 +125,10 @@ class ContributorViewSet(viewsets.ModelViewSet):
         try:
             contributor = Contributor.objects.get(project_id=project_pk,
                                                   user_id=pk)
-            self.perform_destroy(contributor)
         except Exception:
             raise ContributorNotFound()
+        self.check_object_permissions(request, contributor)
+        self.perform_destroy(contributor)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
