@@ -1,6 +1,8 @@
 # SoftDesk
 
-**SoftDesk is a Django RESTful API for managing to-do lists within IT Teams:**
+SoftDesk is a Django RESTful API for managing to-do lists within IT Teams.
+
+# Description
 
 * Access is granted to authenticated users via JSON Web Tokens (JWTs);
 
