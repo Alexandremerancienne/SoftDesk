@@ -44,8 +44,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, pk=None):
         user = request.user
         queryset = Project.objects.filter(id=pk, contributor__user=user)
-        if queryset.count() == 0:
+        projects = Project.objects.filter(id=pk)
+        if queryset.count() == 0 and projects.count() == 0:
             raise ProjectNotFound()
+        elif queryset.count() == 0 and projects.count() != 0:
+            raise NotContributor()
         project = queryset.first()
         serializer = ProjectSerializer(project)
         return Response(serializer.data)
@@ -74,11 +77,13 @@ class ContributorViewSet(viewsets.ModelViewSet):
         queryset = Contributor.objects.filter(
             project_id=project_pk, project__contributor__user=request.user
         )
-        if queryset.count() == 0:
+        projects = Project.objects.filter(id=project_pk)
+        if queryset.count() == 0 and projects.count() == 0:
             raise ProjectNotFound()
-        else:
-            serializer = ContributorSerializer(queryset, many=True)
-            return Response(serializer.data)
+        elif queryset.count() == 0 and projects.count() != 0:
+            raise NotContributor()
+        serializer = ContributorSerializer(queryset, many=True)
+        return Response(serializer.data)
 
     def create(self, request, project_pk=None):
         try:
@@ -143,10 +148,13 @@ class IssueViewSet(viewsets.ModelViewSet):
         except ValueError:
             raise InvalidProjectNumber()
         user = self.request.user
-        try:
-            Project.objects.get(id=project_pk, contributor__user=user)
-        except Exception:
+        queryset = Project.objects.filter(id=project_pk,
+                                          contributor__user=user)
+        projects = Project.objects.filter(id=project_pk)
+        if queryset.count() == 0 and projects.count() == 0:
             raise ProjectNotFound()
+        elif queryset.count() == 0 and projects.count() != 0:
+            raise NotContributor()
         queryset = Issue.objects.filter(
             project_id=project_pk,
         )
@@ -155,6 +163,13 @@ class IssueViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, project_pk=None, pk=None):
         user = request.user
+        user_projects = Project.objects.filter(id=project_pk,
+                                               contributor__user=user)
+        projects = Project.objects.filter(id=project_pk)
+        if user_projects.count() == 0 and projects.count() == 0:
+            raise ProjectNotFound()
+        elif user_projects.count() == 0 and projects.count() != 0:
+            raise NotContributor()
         queryset = Issue.objects.filter(project_id=project_pk,
                                         id=pk,
                                         project__contributor__user=user)
@@ -402,32 +417,37 @@ class CommentViewSet(viewsets.ModelViewSet):
             int(pk)
         except ValueError:
             raise InvalidCommentNumber()
-        try:
-            Project.objects.get(id=project_pk, contributor__user=user)
-        except Exception:
+
+        user_projects = Project.objects.filter(id=project_pk,
+                                               contributor__user=user)
+        projects = Project.objects.filter(id=project_pk)
+        if user_projects.count() == 0 and projects.count() == 0:
+            raise ProjectNotFound()
+        elif user_projects.count() == 0 and projects.count() != 0:
             raise NotContributor()
+
         try:
-            Issue.objects.get(project_id=project_pk, id=pk)
+            Issue.objects.get(project_id=project_pk, id=issue_pk)
         except Exception:
             raise IssueNotFound()
         try:
             Comment.objects.get(issue__project_id=project_pk,
-                                issue_id=pk, id=pk)
+                                issue_id=issue_pk, id=pk)
         except Exception:
             raise CommentNotFound()
-        else:
-            request_copy = request.data.copy()
-            request_copy["author"] = request.user.id
 
-            comment = Comment.objects.get(
-                issue__project_id=project_pk, issue_id=pk, id=pk
-            )
-            self.check_object_permissions(request, comment)
-            serializer = CommentSerializer(comment, data=request_copy)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
+        request_copy = request.data.copy()
+        request_copy["author"] = request.user.id
 
-            return Response(serializer.data)
+        comment = Comment.objects.get(
+            issue__project_id=project_pk, issue_id=issue_pk, id=pk
+        )
+        self.check_object_permissions(request, comment)
+        serializer = CommentSerializer(comment, data=request_copy)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
 
     def partial_update(self, request, project_pk=None,
                        issue_pk=None, pk=None, **kwargs):
@@ -437,18 +457,28 @@ class CommentViewSet(viewsets.ModelViewSet):
             int(project_pk)
         except ValueError:
             raise InvalidProjectNumber()
-        try:
-            Project.objects.get(id=project_pk, contributor__user=user)
-        except Exception:
+
+        user_projects = Project.objects.filter(id=project_pk,
+                                               contributor__user=user)
+        projects = Project.objects.filter(id=project_pk)
+        if user_projects.count() == 0 and projects.count() == 0:
+            raise ProjectNotFound()
+        elif user_projects.count() == 0 and projects.count() != 0:
             raise NotContributor()
+
         try:
-            Issue.objects.get(project_id=project_pk, id=pk)
+            Issue.objects.get(project_id=project_pk, id=issue_pk)
         except Exception:
             raise IssueNotFound()
         try:
             int(pk)
         except ValueError:
             raise InvalidCommentNumber()
+        try:
+            Comment.objects.get(issue__project_id=project_pk,
+                                issue_id=issue_pk, id=pk)
+        except Exception:
+            raise CommentNotFound()
 
         comment = Comment.objects.get(issue__project_id=project_pk,
                                       issue_id=issue_pk,

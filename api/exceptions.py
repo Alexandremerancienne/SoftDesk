@@ -56,7 +56,7 @@ class CommentNotFound(APIException):
 
 
 class NotContributor(APIException):
-    status_code = 404
+    status_code = 403
     default_detail = "You are not a Contributor " \
                      "to this Project"
     default_code = "not_contributor_to_project"
