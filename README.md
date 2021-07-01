@@ -34,4 +34,4 @@ SoftDesk is a Django RESTful API for managing to-do lists within IT Teams.
 
 * Endpoints can be tested with tools such as Postman or cURL.
 
-* A Public Postman collection is available to test the API endpoints : `https://documenter.getpostman.com/view/15000046/Tzeaj6GQ`
+* A [Public Postman collection](https://documenter.getpostman.com/view/15000046/Tzeaj6GQ) is available to test the API endpoints.
